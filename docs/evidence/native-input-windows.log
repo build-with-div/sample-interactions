@@ -1,0 +1,80 @@
+# tools/native-input.ps1 on Windows 11, Div 565db46a, 2026-11-13, debug build of src/bin/native_probe.rs.
+# STEP lines are the posted messages; indented lines are what the probe printed for them.
+# The 'Leave' after each posted move is Windows reporting the real cursor outside the window (synthetic input), not a Div bug.
+window 'div-native-probe'
+DPI scale 1
+STEP move over the handle
+    PLATFORM resized ViewportMetrics { logical_width: 600.0, logical_height: 400.0, physical_width: 600, physical_height: 400, device_scale_factor: 1.0, authority: Physical }
+    PLATFORM resized ViewportMetrics { logical_width: 600.0, logical_height: 400.0, physical_width: 600, physical_height: 400, device_scale_factor: 1.0, authority: Physical }
+    PLATFORM resized ViewportMetrics { logical_width: 600.0, logical_height: 400.0, physical_width: 600, physical_height: 400, device_scale_factor: 1.0, authority: Physical }
+    SCROLL scroller start top=500
+    SCROLL scroller top=500
+    EVENT mousemove target=handle button=2 pointer=0 at=100.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Move 100.0,100.0 Other(0)
+    PLATFORM pointer id=0 Leave 100.0,100.0 Other(0)
+STEP press on the handle
+    CAPTURE pointer=0 Ok(())
+    EVENT mousedown target=handle button=0 pointer=0 at=100.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Down 100.0,100.0 Left
+STEP drag over #other
+    EVENT mousemove target=handle button=2 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Move 350.0,100.0 Other(0)
+    PLATFORM pointer id=0 Leave 350.0,100.0 Other(0)
+STEP drag left of the window (negative client x)
+    EVENT mousemove target=handle button=2 pointer=0 at=-30.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Move -30.0,100.0 Other(0)
+STEP release outside the window
+    EVENT mouseup target=handle button=0 pointer=0 at=-30.0,100.0 delta=0,0 mods=0
+    EVENT click target=handle button=0 pointer=0 at=-30.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Up -30.0,100.0 Left
+STEP hover #other after the release
+    EVENT mousemove target=handle button=2 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Move 350.0,100.0 Other(0)
+    PLATFORM pointer id=0 Leave 350.0,100.0 Other(0)
+STEP right press on #other
+    CAPTURE pointer=0 Ok(())
+    EVENT mousedown target=handle button=2 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Down 350.0,100.0 Right
+STEP right release
+    EVENT mouseup target=handle button=2 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    EVENT click target=handle button=2 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Up 350.0,100.0 Right
+STEP middle press
+    CAPTURE pointer=0 Ok(())
+    EVENT mousedown target=handle button=1 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Down 350.0,100.0 Middle
+STEP middle release
+    EVENT mouseup target=handle button=1 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    EVENT click target=handle button=1 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Up 350.0,100.0 Middle
+STEP double click: first press
+    CAPTURE pointer=0 Ok(())
+    EVENT mousedown target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Down 350.0,100.0 Left
+    EVENT mouseup target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    EVENT click target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Up 350.0,100.0 Left
+STEP double click: second press
+    CAPTURE pointer=0 Ok(())
+    EVENT mousedown target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Down 350.0,100.0 Left
+    EVENT mouseup target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    EVENT click target=handle button=0 pointer=0 at=350.0,100.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Up 350.0,100.0 Left
+STEP move over the scroller
+    EVENT mousemove target=handle button=2 pointer=0 at=400.0,275.0 delta=0,0 mods=0
+    PLATFORM pointer id=0 Move 400.0,275.0 Other(0)
+    PLATFORM pointer id=0 Leave 400.0,275.0 Other(0)
+STEP wheel one notch forward (away from the user: scroll up in every Windows app)
+    EVENT wheel target=- button=1 pointer=0 at=400.0,275.0 delta=0,40 mods=0
+    PLATFORM wheel 400.0,275.0 delta=0,40
+    SCROLL scroller top=540
+STEP again
+    EVENT wheel target=- button=1 pointer=0 at=400.0,275.0 delta=0,40 mods=0
+    PLATFORM wheel 400.0,275.0 delta=0,40
+    SCROLL scroller top=580
+STEP horizontal wheel one notch right
+    EVENT wheel target=- button=1 pointer=0 at=400.0,275.0 delta=-40,0 mods=0
+    PLATFORM wheel 400.0,275.0 delta=-40,0
+STEP close
+    PLATFORM close-requested
