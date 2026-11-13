@@ -1,7 +1,8 @@
-//! Direct manipulation built by hand on today's API: a splitter (pointer
-//! and keyboard), a cross-list reorder with a drag threshold and a ghost,
-//! and rubber-band selection. Each shows the workaround works headlessly
-//! and how much code the app has to own.
+//! Evidence of which pieces exist today (capture routing, hit testing,
+//! geometry) by building a splitter, a cross-list reorder with a threshold
+//! and ghost, and rubber-band selection on Div's current API. These are not
+//! proposals: each shortcut is labeled `div-gap: F<n>` with the platform
+//! feature (docs/design.md) that replaces it.
 
 mod common;
 
@@ -25,8 +26,8 @@ fn a_splitter_by_hand() {
         }
     });
     let bar = ui.by_id("bar");
-    // div-gap: no `cursor: col-resize` (Div's Cursor has auto, default,
-    // pointer, text, move, not-allowed); no aria-valuenow mapping.
+    // div-gap: F17 (no `cursor: col-resize`), F13 (role="separator" and
+    // aria-valuenow are not mapped, so the role is set by hand).
     bar.set_accessibility_role(AccessibilityRole::Splitter)
         .unwrap();
     let dragging = Rc::new(Cell::new(false));
@@ -52,7 +53,7 @@ fn a_splitter_by_hand() {
         let (bar2, dragging) = (bar.clone(), dragging.clone());
         bar.on("mouseup", move |event: &Event| {
             dragging.set(false);
-            // div-gap: capture is not released implicitly after the up.
+            // div-gap: F1 (capture is not released implicitly after the up).
             bar2.release_pointer_capture(event.pointer_id).unwrap();
         })
         .unwrap();
@@ -133,6 +134,7 @@ fn a_cross_list_reorder_with_threshold_and_ghost() {
         board
     });
 
+    // div-gap: F3 (no HTML drag and drop); F1 (no unified pointer stream).
     // App-owned drag state: where the press started, which card, whether
     // the threshold was passed.
     #[derive(Clone, Default)]

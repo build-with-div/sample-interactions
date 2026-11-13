@@ -1,17 +1,19 @@
 # Sample Interactions
 
 A dogfood sample for [Div](https://github.com/build-with-div/div), a
-native Rust UI framework. It covers the interaction patterns and data views
-that professional desktop apps are built from: drag handles, split panes,
-sortable lists and kanban drags, OS drag and drop, pointer, wheel and
-keyboard input, focus management, overlays, virtualized lists, trees and
-data grids, and window chrome. It uses only Div's public API, and part of
-its job is to find what Div is still missing.
+native Rust UI framework that aims to render HTML and CSS as Chromium does.
+It ports the npm packages that desktop apps use for interaction and data
+views to Rust on Div, and finds the web platform features Div must
+implement to run them faithfully. The packages are dnd-kit, react-dnd,
+react-resizable-panels, Radix UI and Floating UI, cmdk, TanStack Virtual
+and Table, AG Grid (as a reference) and react-arborist.
 
-Status: phase 1, probes and design. Read [docs/design.md](docs/design.md)
-for what works, what needs a workaround and what is missing, pattern by
-pattern. [docs/rfc-interactions.md](docs/rfc-interactions.md) drafts the
-primitives Div could add. The workbench app comes after review.
+Status: phase 1, probes and design. [docs/design.md](docs/design.md) maps
+each package to the platform features it uses and says what Div has, what
+is missing, the owner and the size.
+[docs/rfc-interactions.md](docs/rfc-interactions.md) drafts those features
+as a Div RFC. The ports come after review, each compared with the original
+package in pinned Chromium.
 
 ## What is here
 
