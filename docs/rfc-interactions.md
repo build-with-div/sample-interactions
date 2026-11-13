@@ -3,8 +3,10 @@
 A draft for build-with-div/div's `docs/alpha/rfcs/`, in that directory's
 format (Problem, Proposal, Affected tracks, Migration), plus a verification
 section. Written by the `sample-interactions` dogfood app against Div
-`565db46a`. Nothing here is agreed: each part names its owning track, and
-the user decides what is scheduled. Feature numbers (F1–F19) and evidence
+`565db46a`. Each part names its owning track, and the user decides what
+is scheduled. The platform design decisions of 13 November 2026 settle the
+API directions marked *(decided)* below; the owning track's own RFC still
+fixes the details. Feature numbers (F1–F19) and evidence
 are in [design.md](design.md).
 
 ## Problem
@@ -76,7 +78,8 @@ Chromium's dispatch for every pointer input, native and headless:
   `hasPointerCapture`, with implicit release after `pointerup` or
   `pointercancel`, and `gotpointercapture`/`lostpointercapture` at the next
   pointer event. While captured, the cursor comes from the captor.
-- **Event data.** `pointerId` (mouse 1, as Chromium), `pointerType`,
+- **Event data** *(decided: typed enums and bitflags carrying web values;
+  mouse `pointerId` 1, as in Chromium)*. `pointerId`, `pointerType`,
   `isPrimary`, `button` (−1 on moves), `buttons`, `pressure`,
   `tiltX`/`tiltY`, `width`/`height`, `screenX`/`screenY` and
   `offsetX`/`offsetY`.
@@ -117,10 +120,12 @@ page as Ctrl+wheel, as in Chromium.
   of links, images and selections.
 - **Events.** `dragstart`, `drag`, `dragend`, `dragenter`, `dragover`,
   `dragleave` and `drop`, with the specification's drag data store modes.
-- **Rust surface.** A `DataTransfer` type: `set_data`, `get_data`,
-  `types`, `files` (`PathBuf`s), `items`, `effect_allowed`, `drop_effect`
-  and `set_drag_image(&Element, x, y)`. It is reached from drag events
-  through `Event::data_transfer()`.
+- **Rust surface** *(decided: one `DataTransfer` type for clipboard and
+  drag; files are web-style `File` objects wrapping paths)*. `set_data`,
+  `get_data`, `types`, `files` (`File`s, each with its path), `items`,
+  `effect_allowed`, `drop_effect` and `set_drag_image(&Element, x, y)`. It
+  is reached from drag and clipboard events through
+  `Event::data_transfer()`.
 - **Drag image.** Rendered from the element, as Chromium does.
 - **OS bridges.** Files and text dragged in target the element under the
   pointer, with position. Dragging out works too. On Windows, Div's own OLE
@@ -172,7 +177,10 @@ let observer = IntersectionObserver::new(
 );
 ```
 
-Both follow the specification's delivery points in the frame: resize
+*(Decided for `ResizeObserver`: one API with the three boxes `BorderBox`,
+`ContentBox` and `DevicePixelContentBox`; the engine computes observations
+after layout and the framework delivers them before paint.)* Both follow
+the specification's delivery points in the frame: resize
 observations after layout, with the loop limit and the error behavior, and
 intersection after paint-ready geometry. Entries carry
 `content_rect`, `border_box_size`, `content_box_size`,
@@ -207,7 +215,8 @@ same state.
 - **F17.** The CSS `cursor` keyword set, with the cursor following the
   captor (engine + framework, S).
 - **F18.** A per-frame callback before style and layout, as
-  `requestAnimationFrame` (framework, S):
+  `requestAnimationFrame` (framework, S). *(Decided: per document, with a
+  typed handle, in every window.)*
 
   ```rust
   div::request_animation_frame(|time_ms| { ... }) -> FrameHandle;
@@ -215,7 +224,8 @@ same state.
 
 ### F19. Window chrome (framework, M–L)
 
-- **Drag regions.** Chromium's `app-region: drag | no-drag` CSS property
+- **Drag regions** *(decided: Chromium's property name)*. Chromium's
+  `app-region: drag | no-drag` CSS property
   marks regions. On Windows, non-client hit testing maps them, so Snap
   layouts work on a custom maximize button. On Linux, they map to winit's
   `drag_window`.
@@ -287,12 +297,11 @@ Small PRs on `main`, each green:
 
 ## Open questions
 
-- **Pointer ids.** Chromium's mouse `pointerId` is 1. Today Div uses 0
-  for the mouse. Change it with F1, or keep it and document the
-  difference?
-- **`DataTransfer` and files.** Should it expose `PathBuf`s directly (the
-  native shape), or `File` objects with paths behind them, as Electron
-  does?
-- **Window chrome.** Is `app-region` the right name for Div's title-bar
-  regions? It is Chromium's own property, used by Electron and Window
-  Controls Overlay, but it is not standardized.
+The three questions this draft raised were settled by the platform design
+decisions of 13 November 2026:
+
+- **Pointer ids.** The mouse `pointerId` becomes 1, as in Chromium (today
+  Div uses 0), with F1.
+- **`DataTransfer` and files.** `File` objects wrapping paths, in one type
+  shared with the clipboard.
+- **Window chrome.** `app-region`, Chromium's property name.
