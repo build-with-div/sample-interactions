@@ -12,7 +12,10 @@ Phase 1 (this document) names the packages, maps them to platform features,
 and probes what Div has today. Phase 2 builds the ports in this repository,
 compared against the original packages running in pinned Chromium.
 
-Pinned Div: `565db46a` (build-with-div/div `main`, 13 November 2026).
+Pinned Div: `92ea25a0` (build-with-div/div `main`, 13 November 2026). The
+source reads below were taken at `565db46a`; the two commits between them
+change only how `view!` shows `{expr}` children, and the probes pass
+unchanged at both.
 [rfc-interactions.md](rfc-interactions.md) drafts the platform features as
 a Div RFC.
 
@@ -43,7 +46,7 @@ Controls Overlay) and the window geometry APIs (`screenX`, `moveTo`,
 
 ## Platform features: what Div has
 
-Status at `565db46a`: **has** (matches what the probes check), **partial**,
+Status at `92ea25a0`: **has** (matches what the probes check), **partial**,
 or **missing**. Evidence is a probe id from `tests/probe_*.rs`, the native
 probe log, or *source* (a code read, cited as `path:line`). Sizes: S (one
 PR), M (a few PRs), L (several weeks, or per-OS work). The packages column
@@ -53,12 +56,12 @@ says who needs each feature.
 | --- | --- | --- | --- | --- | --- | --- |
 | F1 | **Pointer Events** (Level 3) and the UI Events mouse model | partial. `set_pointer_capture` routes moves to the captor, including outside the window (`pointer.capture`, native). Touch fires `pointer*`. `hit_test` skips `pointer-events: none` (`pointer.ghost-hit-test`) | Mouse fires only `mouse*` and touch only `pointer*`, where Chromium sends `pointer*` and then compatibility `mouse*`. Capture is never released after up, and there are no `gotpointercapture`/`lostpointercapture` events (`pointer.capture-release`, native). Right and middle buttons fire `click`, and there is no `auxclick` (`pointer.right-button`). `click` targets the release element, not the common ancestor (`pointer.click-common-ancestor`). No `dblclick` or `detail` (`pointer.dblclick`). No `pointerType`, `buttons`, `isPrimary`, pressure, tilt or screen coordinates. Native moves report button 2 (native log; `divui/src/app.rs:289-293`). No `contextmenu` (framework gap 3). | framework (divui events, div-platform) + engine (`interaction.rs` capture, click target) | M | all |
 | F2 | **Wheel events** (UI Events `WheelEvent`) | partial. Cancellable `wheel` events; Ctrl+wheel `preventDefault` works (`input.ctrl-wheel`) | **Native direction is inverted**: one notch forward scrolled 500 → 540 → 580, and horizontal is inverted too (native log; `div-platform/src/desktop.rs:1027-1040`). 40 px per notch, ignoring the system's lines per notch. No `deltaMode`. Shift+wheel does not scroll horizontally (`input.shift-wheel`) | framework (div-platform) | S | all scrolling |
-| F3 | **HTML drag and drop** and **`DataTransfer`**, including OS files in and out | missing. No `draggable` or drag events (*source*). OS drops reach `App` and are discarded (`divui/src/app.rs:374-379`); only a single-window `App` can observe them, through `on_platform_event`, with no position | The whole API: the drag event sequence, `DataTransfer`, the drag image, drop effects, and OS bridges (Windows OLE `IDropTarget`/`DoDragDrop`, X11 XDND, Wayland data device) | engine (events, defaults, drag image) + framework (div-platform per OS) | L | react-dnd, react-arborist, AG Grid |
+| F3 | **HTML drag and drop** and **`DataTransfer`**, including OS files in and out | missing. No `draggable` or drag events (*source*). OS drops reach `App` and are discarded (`divui/src/app.rs:374-379`); only a single-window `App` can observe them, through `on_platform_event`, with no position | The whole API: the drag event sequence, `DataTransfer` (one type shared with the clipboard, files as `File` objects wrapping paths: decision 7), the drag image, drop effects, and OS bridges (Windows OLE `IDropTarget`/`DoDragDrop`, X11 XDND, Wayland data device) | engine (events, defaults, drag image) + framework (div-platform per OS) | L | react-dnd, react-arborist, AG Grid |
 | F4 | **Top layer**, **`<dialog>`** (`show`, `showModal`, `::backdrop`, Escape) | partial. `Document::set_modal_root` contains Tab and restores focus (`focus.trap`). Portals by hand: a fixed box at the end of `<body>` escapes clipping and stacks by `z-index` (`overlay.portal`, `overlay.z-order`) | No `<dialog>` element (`div-dom` `ElementTag`), no top layer, no `::backdrop` | engine (A3, planned) | L (A3) | Radix, cmdk |
 | F5 | **`popover` attribute** (`auto`, `manual`, `hint`; light dismiss; `showPopover`; `popovertarget`; `toggle` events) | missing (*source*) | All of it. Light dismiss today is a capture listener plus `Element::contains` (`overlay.dismiss`) | engine (on F4) | M | Radix, Floating UI |
 | F6 | **CSS anchor positioning** | partial. `anchor-name`, `position-anchor` and `position-area` exist, with 9 `position-area` values, for anchors laid out in the same containing block (`div-layout/src/block.rs:58-75`, `div-style/src/computed.rs:163`) | `anchor()` and `anchor-size()`, `position-try-fallbacks`, `position-try-order`, `@position-try`, `position-visibility`, the `span-*` area keywords, anchors in other containing blocks and in the top layer, and the implicit anchor from `popovertarget` | engine (style, layout) | M–L | Floating UI's job, natively |
 | F7 | **`inert`** | missing (*source*). The modal root covers the focus half of one modal | The attribute: no focus, no hit testing, hidden from accessibility | engine | S–M | Radix (`hideOthers`) |
-| F8 | **`ResizeObserver`** and the window `resize` event | missing (`overlay.reposition-events`, `list.measure`) | Observer delivery after layout, before paint; `borderBoxSize`/`contentBoxSize`; the window `resize` event | engine (layout notifications) + framework (delivery) | M | dnd-kit, panels, Radix, Floating UI, cmdk, TanStack Virtual, AG Grid, react-arborist |
+| F8 | **`ResizeObserver`** and the window `resize` event | missing (`overlay.reposition-events`, `list.measure`) | One observer with the three boxes (`border-box`, `content-box`, `device-pixel-content-box`): the engine computes after layout and the framework delivers before paint (decision 4); the window `resize` event | engine (layout notifications) + framework (delivery) | M | dnd-kit, panels, Radix, Floating UI, cmdk, TanStack Virtual, AG Grid, react-arborist |
 | F9 | **`IntersectionObserver`** | missing (*source*) | Observer with roots, margins and thresholds | engine | M | Floating UI, infinite lists |
 | F10 | **Geometry** (`getBoundingClientRect`, `getClientRects`, `client*`, `scroll*`, `elementFromPoint`, `getComputedStyle`) | has: `bounding_rect`, `client_rects`, `client_width`, `scroll_height`, `hit_test` and `computed_style` (`list.measure`, `select.rubber-band`) | `elementsFromPoint`, `offsetParent`/`offsetTop`, `visualViewport` | engine | S | all |
 | F11 | **Scroll APIs and events** | partial. `scroll_to`, `scroll_by`, smooth scrolling and `scroll_into_view` with options; `scroll` is delivered at frame time (`overlay.reposition-events`); scroll snap | `scrollend`, `overscroll-behavior`, scroll anchoring (`overflow-anchor`); `TestApp` does not deliver frame-timed events (gap T1 below) | engine | S–M | TanStack Virtual, dnd-kit, AG Grid |
@@ -72,9 +75,20 @@ says who needs each feature.
 | F19 | **`app-region: drag`** and window geometry (`screenX/Y`, `moveTo`, `resizeTo`, maximize state, `resize`/`move` events) | partial. `WindowSpec` has title, size, min, max, resizable and decorations (`divui/src/window.rs:97-160`) | Drag regions, window position and state, move and resize events, the pointer's screen position, and platform events for `AppSpec` windows. winit 0.30 has `drag_window`, `drag_resize_window` and `outer_position` | framework (window, div-platform) | M–L | custom chrome, tear-off, state restore |
 
 Already queued in Div, and needed by the same packages: CSS custom
-properties, attribute selectors and `data-state` styling (engine A1 and the
-known "no CSS variables" gap), `contextmenu` (framework gap 3), and the top
-layer (engine A3).
+properties, attribute selectors and `data-state` styling (Tier 0 items 0.1
+and 0.5), `contextmenu` (framework gap 3), and the top layer (engine A3).
+Radix and cmdk also write custom properties at runtime
+(`--radix-popover-content-transform-origin`, `--cmdk-list-height` through
+`style.setProperty`); decision 2 adopts runtime custom-property writes
+(engine, with the framework's API). Not probed here.
+
+The platform design decisions of 13 November 2026 (Div's platform plan,
+`decisions-2026-11-13.md`) settle this design's open API questions:
+Pointer Events use typed enums and bitflags carrying web values, with mouse
+`pointerId` 1 as in Chromium; `requestAnimationFrame` is per document with
+a typed handle; `ResizeObserver` is one API with three boxes;
+`DataTransfer` is one type for clipboard and drag, with `File` objects; and
+window chrome uses Chromium's `app-region`. The RFC draft records them.
 
 ### Costs that the ports will hit
 
@@ -153,7 +167,7 @@ Div's harness (T2) goes to the components track as a proposal.
 ## What the probes show today
 
 The probes are evidence for the table above. They assert what Div does at
-`565db46a` and print a `PROBE <id>: ...` line. A probe that starts failing
+`92ea25a0` and print a `PROBE <id>: ...` line. A probe that starts failing
 after a Div bump means a finding changed.
 
 | Kind | Where | Notes |
@@ -202,23 +216,41 @@ says so. It does not grow an observer of its own.
 Not yet attributed: the mount and relayout costs above go to the framework
 and engine tracks as measurements, with the probes to reproduce them.
 
-## Phase 2: the ports (after review)
+## Phase 2: the ports
 
-Each port is a Rust module in this repository that follows the package's
-design. Its fidelity fixture compares it with the original. In order:
+Div scheduled its Tier 0 foundations on 13 November 2026 (see the
+platform plan, section 2). For this sample that covers F2 wheel direction
+(0.9), F18 `requestAnimationFrame` with frame advance (0.10), F8
+`ResizeObserver` (0.11), and the unified F1 Pointer Events with T1 input
+helpers (0.12). F13 ARIA mapping, the rest of F1 (`dblclick`, `auxclick`,
+the click target) and F17 cursors are Tier 1. F4 to F7 overlays are Tier 2
+and F3 drag and drop is Tier 3; none of these are scheduled.
 
-1. react-resizable-panels: needs F1, F8 and F17; has fixtures for nested
-   groups and keyboard resizing.
-2. TanStack Virtual (`virtual-core`): needs F8 and F11.
-3. dnd-kit core and sortable, including kanban: needs F1, F8, F15 and F16.
-4. TanStack Table (`table-core`), rendered with Virtual: needs F14 and F17.
-5. react-arborist: needs F3 and F13.
-6. cmdk on the Radix dialog from div-components: needs F4 and F13.
-7. Files dropped in from the OS: needs F3.
+So the ports start with the pieces that run on today's Div. Every missing
+feature is scaffolded only as `// div-gap: F<n> <web feature>` at the point
+where the platform feature belongs. [gaps.md](gaps.md) lists each label
+with its file, and the gap is reported to the parent session. When a
+feature lands in Div, its scaffolding is removed in the next bump, and the
+probe that recorded the old behavior is updated in the same PR.
 
-Where a feature is still missing when its port starts, the port uses a
-labeled workaround, and the gap is reported to the parent session as it
-blocks.
+One PR per milestone, merged when CI is green:
+
+| # | Milestone | Package | Runs on today's Div | Scaffolded (`div-gap`) |
+| --- | --- | --- | --- | --- |
+| M0 | Pin Div `92ea25a0`; this plan | — | — | — |
+| M1 | Panel group layout model and its view: sizes in percent, min, max, collapsible, nested groups, keyboard resizing on the separator | react-resizable-panels | pointer capture, flex sizing, keyboard events, `aria-value*` attributes | F1 capture release and document-level up; F8 group size; F13 `role="separator"`; F15 `user-select`; F17 `col-resize` cursor |
+| M2 | Fidelity runner and the first reference page: the same scripted drag and key steps in pinned Chromium (CDP) and in Div, comparing slot geometry and attributes after each step | react-resizable-panels | `Document` dispatch, `bounding_rect` | T2 step kinds live here until Div's harness has them |
+| M3 | Table model: column definitions, sorting, column sizing (`onChange` and `onEnd` modes), the row model, rendered as a grid | TanStack Table (`table-core`) | sticky header (F14), pointer capture | F13 `role="grid"`; F17 cursor; F1 |
+| M4 | Virtualizer: measurement, overscan, `scrollToIndex`, combined with M3 | TanStack Virtual (`virtual-core`) | scroll APIs, frame-timed scroll events | F8 row measurement; F11 `scrollend` |
+| M5 | Drag sensors, collision detection, sortable lists and kanban, auto-scroll | dnd-kit core and sortable | pointer capture, `hit_test`, geometry, timers | F1 unified stream; F15; F16 `touch-action`; F18 |
+| M6 | Tree with keyboard navigation, multi-select and in-app drag reorder | react-arborist | as M4 and M5 | F13 `role="tree"`; F3 drag and drop |
+| M7 | Command palette on div-components' dialog | cmdk | modal root, focus trap, keyboard | F4 `<dialog>`; F13 `role="listbox"` |
+| M8 | Workbench app combining the ports in one window | — | `App`, menus | F19 window chrome; F3 OS file drop |
+
+M2 to M7 each add the package's reference page and trace steps to the
+fidelity runner, and report measured differences per step. A milestone
+whose platform feature lands in Div first is built on the feature instead
+of scaffolding.
 
 ## Reproduce
 
