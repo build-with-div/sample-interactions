@@ -18,6 +18,9 @@ compared with the original package in pinned Chromium.
 
 ## What is here
 
+- `src/panels`: react-resizable-panels 4.22.1 on Div (`Group`, `Panel`,
+  `Separator`). `tests/panels_oracle.rs` checks its layout functions
+  against the package's own, and `tests/panels_group.rs` drives it on Div.
 - `tests/probe_*.rs`: headless probes. Each asserts what Div does today at
   the pinned commit and prints a `PROBE <id>: ...` line.
 - `src/bin/native_probe.rs` and `tools/native-input.ps1`: a real window
@@ -44,6 +47,13 @@ source, which needs:
 
 ```sh
 cargo test -- --nocapture --test-threads=1
+```
+
+To regenerate the react-resizable-panels oracle (Node 22.18 or newer):
+
+```sh
+git clone --depth 1 --branch 4.22.1 https://github.com/bvaughn/react-resizable-panels out/rrp-4.22.1
+node tools/rrp-oracle/generate.mjs out/rrp-4.22.1 tests/fixtures/rrp-oracle.json
 ```
 
 On Windows, `pwsh tools/native-input.ps1` (after `cargo build --bin
