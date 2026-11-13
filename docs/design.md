@@ -12,7 +12,10 @@ Phase 1 (this document) names the packages, maps them to platform features,
 and probes what Div has today. Phase 2 builds the ports in this repository,
 compared against the original packages running in pinned Chromium.
 
-Pinned Div: `565db46a` (build-with-div/div `main`, 13 November 2026).
+Pinned Div: `92ea25a0` (build-with-div/div `main`, 13 November 2026). The
+source reads below were taken at `565db46a`; the two commits between them
+change only how `view!` shows `{expr}` children, and the probes pass
+unchanged at both.
 [rfc-interactions.md](rfc-interactions.md) drafts the platform features as
 a Div RFC.
 
@@ -43,7 +46,7 @@ Controls Overlay) and the window geometry APIs (`screenX`, `moveTo`,
 
 ## Platform features: what Div has
 
-Status at `565db46a`: **has** (matches what the probes check), **partial**,
+Status at `92ea25a0`: **has** (matches what the probes check), **partial**,
 or **missing**. Evidence is a probe id from `tests/probe_*.rs`, the native
 probe log, or *source* (a code read, cited as `path:line`). Sizes: S (one
 PR), M (a few PRs), L (several weeks, or per-OS work). The packages column
@@ -153,7 +156,7 @@ Div's harness (T2) goes to the components track as a proposal.
 ## What the probes show today
 
 The probes are evidence for the table above. They assert what Div does at
-`565db46a` and print a `PROBE <id>: ...` line. A probe that starts failing
+`92ea25a0` and print a `PROBE <id>: ...` line. A probe that starts failing
 after a Div bump means a finding changed.
 
 | Kind | Where | Notes |
@@ -202,23 +205,41 @@ says so. It does not grow an observer of its own.
 Not yet attributed: the mount and relayout costs above go to the framework
 and engine tracks as measurements, with the probes to reproduce them.
 
-## Phase 2: the ports (after review)
+## Phase 2: the ports
 
-Each port is a Rust module in this repository that follows the package's
-design. Its fidelity fixture compares it with the original. In order:
+Div scheduled its Tier 0 foundations on 13 November 2026 (see the
+platform plan, section 2). For this sample that covers F2 wheel direction
+(0.9), F18 `requestAnimationFrame` with frame advance (0.10), F8
+`ResizeObserver` (0.11), and the unified F1 Pointer Events with T1 input
+helpers (0.12). F13 ARIA mapping, the rest of F1 (`dblclick`, `auxclick`,
+the click target) and F17 cursors are Tier 1. F4 to F7 overlays are Tier 2
+and F3 drag and drop is Tier 3; none of these are scheduled.
 
-1. react-resizable-panels: needs F1, F8 and F17; has fixtures for nested
-   groups and keyboard resizing.
-2. TanStack Virtual (`virtual-core`): needs F8 and F11.
-3. dnd-kit core and sortable, including kanban: needs F1, F8, F15 and F16.
-4. TanStack Table (`table-core`), rendered with Virtual: needs F14 and F17.
-5. react-arborist: needs F3 and F13.
-6. cmdk on the Radix dialog from div-components: needs F4 and F13.
-7. Files dropped in from the OS: needs F3.
+So the ports start with the pieces that run on today's Div. Every missing
+feature is scaffolded only as `// div-gap: F<n> <web feature>` at the point
+where the platform feature belongs. [gaps.md](gaps.md) lists each label
+with its file, and the gap is reported to the parent session. When a
+feature lands in Div, its scaffolding is removed in the next bump, and the
+probe that recorded the old behavior is updated in the same PR.
 
-Where a feature is still missing when its port starts, the port uses a
-labeled workaround, and the gap is reported to the parent session as it
-blocks.
+One PR per milestone, merged when CI is green:
+
+| # | Milestone | Package | Runs on today's Div | Scaffolded (`div-gap`) |
+| --- | --- | --- | --- | --- |
+| M0 | Pin Div `92ea25a0`; this plan | — | — | — |
+| M1 | Panel group layout model and its view: sizes in percent, min, max, collapsible, nested groups, keyboard resizing on the separator | react-resizable-panels | pointer capture, flex sizing, keyboard events, `aria-value*` attributes | F1 capture release and document-level up; F8 group size; F13 `role="separator"`; F15 `user-select`; F17 `col-resize` cursor |
+| M2 | Fidelity runner and the first reference page: the same scripted drag and key steps in pinned Chromium (CDP) and in Div, comparing slot geometry and attributes after each step | react-resizable-panels | `Document` dispatch, `bounding_rect` | T2 step kinds live here until Div's harness has them |
+| M3 | Table model: column definitions, sorting, column sizing (`onChange` and `onEnd` modes), the row model, rendered as a grid | TanStack Table (`table-core`) | sticky header (F14), pointer capture | F13 `role="grid"`; F17 cursor; F1 |
+| M4 | Virtualizer: measurement, overscan, `scrollToIndex`, combined with M3 | TanStack Virtual (`virtual-core`) | scroll APIs, frame-timed scroll events | F8 row measurement; F11 `scrollend` |
+| M5 | Drag sensors, collision detection, sortable lists and kanban, auto-scroll | dnd-kit core and sortable | pointer capture, `hit_test`, geometry, timers | F1 unified stream; F15; F16 `touch-action`; F18 |
+| M6 | Tree with keyboard navigation, multi-select and in-app drag reorder | react-arborist | as M4 and M5 | F13 `role="tree"`; F3 drag and drop |
+| M7 | Command palette on div-components' dialog | cmdk | modal root, focus trap, keyboard | F4 `<dialog>`; F13 `role="listbox"` |
+| M8 | Workbench app combining the ports in one window | — | `App`, menus | F19 window chrome; F3 OS file drop |
+
+M2 to M7 each add the package's reference page and trace steps to the
+fidelity runner, and report measured differences per step. A milestone
+whose platform feature lands in Div first is built on the feature instead
+of scaffolding.
 
 ## Reproduce
 

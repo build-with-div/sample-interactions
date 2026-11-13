@@ -8,12 +8,13 @@ implement to run them faithfully. The packages are dnd-kit, react-dnd,
 react-resizable-panels, Radix UI and Floating UI, cmdk, TanStack Virtual
 and Table, AG Grid (as a reference) and react-arborist.
 
-Status: phase 1, probes and design. [docs/design.md](docs/design.md) maps
-each package to the platform features it uses and says what Div has, what
-is missing, the owner and the size.
+Status: phase 2, the ports. [docs/design.md](docs/design.md) maps each
+package to the platform features it uses, says what Div has, what is
+missing, the owner and the size, and lists the port milestones.
 [docs/rfc-interactions.md](docs/rfc-interactions.md) drafts those features
-as a Div RFC. The ports come after review, each compared with the original
-package in pinned Chromium.
+as a Div RFC, and [docs/gaps.md](docs/gaps.md) lists every `div-gap:`
+scaffold in the code with the feature that replaces it. Each port is
+compared with the original package in pinned Chromium.
 
 ## What is here
 
