@@ -198,6 +198,8 @@ impl Group {
         let element = Element::create(document, "div")?;
         element.set_attribute("data-group", "true")?;
         element.set_attribute("id", &self.id)?;
+        // `getTestId`: the `id` prop, as no `data-testid` is passed.
+        element.set_attribute("data-testid", &self.id)?;
         element.set_height(LengthValue::percent(100.0))?;
         element.set_width(LengthValue::percent(100.0))?;
         element.set_overflow(Overflow::Hidden)?;
@@ -222,6 +224,7 @@ impl Group {
                     }
                     outer.set_attribute("data-panel", "true")?;
                     outer.set_attribute("id", &panel.id)?;
+                    outer.set_attribute("data-testid", &panel.id)?;
                     outer.set_display(Display::Flex)?;
                     outer.set_flex_basis(LengthValue::px(0.0))?;
                     outer.set_flex_shrink(1.0)?;
@@ -281,6 +284,7 @@ impl Group {
                         },
                     )?;
                     node.set_attribute("id", &separator.id)?;
+                    node.set_attribute("data-testid", &separator.id)?;
                     // div-gap: F13 `role="separator"` is set as the package
                     // sets it, but Div's accessibility tree ignores `role`.
                     node.set_attribute("role", "separator")?;
@@ -1543,7 +1547,9 @@ impl Runtime {
         } = &mut *self.interaction.borrow_mut()
         {
             *cursor_flags = next_flags;
-            *moved = did_pointer_move;
+            // `next.didPointerMove ||= didPointerMove`: once moved, a drag
+            // stays moved even back at its start.
+            *moved |= did_pointer_move;
         }
         self.refresh_cursor();
     }

@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  Fractional flex-grow without the panels port: the boxes Chromium gives
+  plain flex items sized as react-resizable-panels sizes its panels
+  (flex: <percent> 1 0px, with 4px separators flex: 0 0 auto). Run:
+
+      node tools/fidelity/flex-grow-probe.mjs CHROME tests/fixtures/fidelity/flex-grow-chromium.json
+
+  tests/probe_layout.rs builds the same cases on Div; keep CASES equal to
+  its CASES.
+-->
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  .group { display: flex; width: 800px; height: 400px; }
+  .row { flex-direction: row; }
+  .column { flex-direction: column; }
+  .row > .separator { width: 4px; flex: 0 0 auto; }
+  .column > .separator { height: 4px; flex: 0 0 auto; }
+</style>
+<div id="cases"></div>
+<pre id="out"></pre>
+<script>
+  // [id, direction, flex-grow of each item]
+  const CASES = [
+    ["row-30-45-25", "row", [30, 45, 25]],
+    ["row-10-70-20", "row", [10, 70, 20]],
+    ["row-25-55-20", "row", [25, 55, 20]],
+    ["row-35-65", "row", [35, 65]],
+    ["column-69.697-30.303", "column", [69.697, 30.303]],
+    ["column-85-15", "column", [85, 15]],
+  ];
+  const results = {};
+  for (const [id, direction, grows] of CASES) {
+    const group = document.createElement("div");
+    group.className = `group ${direction}`;
+    grows.forEach((grow, index) => {
+      if (index > 0) {
+        const separator = document.createElement("div");
+        separator.className = "separator";
+        group.append(separator);
+      }
+      const item = document.createElement("div");
+      item.style.flex = `${grow} 1 0px`;
+      group.append(item);
+    });
+    document.getElementById("cases").append(group);
+    results[id] = [...group.children].map((child) => {
+      const rect = child.getBoundingClientRect();
+      const top = group.getBoundingClientRect();
+      return direction === "row" ? [rect.x - top.x, rect.width] : [rect.y - top.y, rect.height];
+    });
+    group.remove();
+  }
+  document.getElementById("out").textContent = JSON.stringify(results);
+</script>

@@ -1,0 +1,171 @@
+{
+  "comment": "Scripted react-resizable-panels scenarios, replayed in pinned Chromium by tools/fidelity/capture.mjs and on Div by tests/fidelity_panels.rs. Coordinates are CSS px in an 800x400 host at the page origin. Separators are 4px along the group axis.",
+  "host": { "width": 800, "height": 400 },
+  "separatorSize": 4,
+  "scenarios": [
+    {
+      "id": "mouse-drag",
+      "group": {
+        "id": "group",
+        "orientation": "horizontal",
+        "children": [
+          { "panel": { "id": "left", "defaultSize": "25%", "minSize": "10%" } },
+          { "separator": { "id": "sep-1" } },
+          { "panel": { "id": "center" } },
+          { "separator": { "id": "sep-2" } },
+          { "panel": { "id": "right", "defaultSize": "25%", "minSize": "20%", "collapsible": true } }
+        ]
+      },
+      "steps": [
+        { "mouse": "move", "x": 100, "y": 200 },
+        { "mouse": "move", "x": 200, "y": 200 },
+        { "mouse": "down", "x": 200, "y": 200 },
+        { "mouse": "move", "x": 300, "y": 200 },
+        { "mouse": "move", "x": 250.5, "y": 210 },
+        { "mouse": "move", "x": 10, "y": 200 },
+        { "mouse": "move", "x": 200, "y": 200 },
+        { "mouse": "up", "x": 200, "y": 200 },
+        { "mouse": "move", "x": 400, "y": 200 },
+        { "mouse": "move", "x": 600, "y": 200 },
+        { "mouse": "down", "x": 600, "y": 200 },
+        { "mouse": "move", "x": 700, "y": 200 },
+        { "mouse": "move", "x": 760, "y": 200 },
+        { "mouse": "move", "x": 790, "y": 200 },
+        { "mouse": "up", "x": 790, "y": 200 },
+        { "mouse": "move", "x": 400, "y": 200 },
+        { "mouse": "move", "x": 200, "y": 200 },
+        { "mouse": "down", "x": 200, "y": 200 },
+        { "mouse": "up", "x": 200, "y": 200 }
+      ]
+    },
+    {
+      "id": "keyboard",
+      "group": {
+        "id": "group",
+        "orientation": "horizontal",
+        "children": [
+          { "panel": { "id": "left", "defaultSize": "25%", "minSize": "10%" } },
+          { "separator": { "id": "sep-1" } },
+          { "panel": { "id": "center" } },
+          { "separator": { "id": "sep-2" } },
+          { "panel": { "id": "right", "defaultSize": "25%", "minSize": "20%", "collapsible": true } }
+        ]
+      },
+      "steps": [
+        { "focus": "sep-1" },
+        { "key": "ArrowRight" },
+        { "key": "ArrowRight" },
+        { "key": "ArrowLeft" },
+        { "key": "ArrowDown" },
+        { "key": "End" },
+        { "key": "Home" },
+        { "key": "F6" },
+        { "key": "ArrowLeft" },
+        { "key": "Enter" },
+        { "key": "F6", "shift": true }
+      ]
+    },
+    {
+      "id": "collapse-keys",
+      "group": {
+        "id": "group",
+        "orientation": "horizontal",
+        "children": [
+          { "panel": { "id": "nav", "defaultSize": "35%", "minSize": "20%", "collapsible": true, "collapsedSize": "5%" } },
+          { "separator": { "id": "sep" } },
+          { "panel": { "id": "main" } }
+        ]
+      },
+      "steps": [
+        { "focus": "sep" },
+        { "key": "Enter" },
+        { "key": "Enter" },
+        { "key": "ArrowLeft" },
+        { "key": "ArrowLeft" },
+        { "key": "ArrowLeft" },
+        { "key": "Home" },
+        { "key": "ArrowRight" }
+      ]
+    },
+    {
+      "id": "vertical-pixels",
+      "group": {
+        "id": "group",
+        "orientation": "vertical",
+        "children": [
+          { "panel": { "id": "top", "minSize": "100px" } },
+          { "separator": { "id": "sep" } },
+          { "panel": { "id": "bottom", "defaultSize": "120px", "maxSize": "250px" } }
+        ]
+      },
+      "steps": [
+        { "mouse": "move", "x": 400, "y": 278 },
+        { "mouse": "down", "x": 400, "y": 278 },
+        { "mouse": "move", "x": 400, "y": 350 },
+        { "mouse": "move", "x": 400, "y": 120 },
+        { "mouse": "move", "x": 400, "y": 50 },
+        { "mouse": "up", "x": 400, "y": 50 },
+        { "focus": "sep" },
+        { "key": "ArrowDown" },
+        { "key": "ArrowUp" },
+        { "key": "Home" }
+      ]
+    },
+    {
+      "id": "nested",
+      "group": {
+        "id": "outer",
+        "orientation": "horizontal",
+        "children": [
+          { "panel": { "id": "side", "defaultSize": "25%" } },
+          { "separator": { "id": "outer-sep" } },
+          {
+            "panel": {
+              "id": "main",
+              "group": {
+                "id": "inner",
+                "orientation": "vertical",
+                "children": [
+                  { "panel": { "id": "editor" } },
+                  { "separator": { "id": "inner-sep" } },
+                  { "panel": { "id": "terminal", "minSize": "15%" } }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        { "mouse": "move", "x": 500, "y": 200 },
+        { "mouse": "down", "x": 500, "y": 200 },
+        { "mouse": "move", "x": 500, "y": 240 },
+        { "mouse": "move", "x": 520, "y": 380 },
+        { "mouse": "up", "x": 520, "y": 380 },
+        { "mouse": "move", "x": 200, "y": 100 },
+        { "mouse": "down", "x": 200, "y": 100 },
+        { "mouse": "move", "x": 320, "y": 100 },
+        { "mouse": "up", "x": 320, "y": 100 }
+      ]
+    },
+    {
+      "id": "disabled",
+      "group": {
+        "id": "group",
+        "orientation": "horizontal",
+        "children": [
+          { "panel": { "id": "a" } },
+          { "separator": { "id": "sep", "disabled": true } },
+          { "panel": { "id": "b" } }
+        ]
+      },
+      "steps": [
+        { "mouse": "move", "x": 400, "y": 200 },
+        { "mouse": "down", "x": 400, "y": 200 },
+        { "mouse": "move", "x": 500, "y": 200 },
+        { "mouse": "up", "x": 500, "y": 200 },
+        { "focus": "sep" },
+        { "key": "ArrowRight" }
+      ]
+    }
+  ]
+}
