@@ -347,3 +347,38 @@ fn shift_wheel_scrolls_vertically() {
     );
     assert_eq!((left, top), (0.0, 40.0));
 }
+
+#[test]
+fn cancelled_up_suppresses_click() {
+    let mut ui = app(|| view! { <div id="b" style:width="100px" style:height="100px"></div> });
+    let b = ui.by_id("b");
+    let log = Log::new();
+    log.listen(&b, "b", &["click"]);
+    let (x, y) = center(&b);
+
+    pointer(&mut ui, 3, PointerEventKind::Down, x, y);
+    pointer(&mut ui, 3, PointerEventKind::Up, x, y);
+    let tap = log.take();
+    assert_eq!(tap, vec!["b:click"]);
+
+    // Chromium fires `click` after a cancelled `mouseup` or `pointerup`;
+    // only cancelling the `click` itself prevents its activation behavior.
+    b.on("mouseup", |event: &Event| event.prevent_default())
+        .unwrap();
+    b.on("pointerup", |event: &Event| event.prevent_default())
+        .unwrap();
+    mouse(&mut ui, MouseEventType::Down, x, y, MouseButton::Left);
+    mouse(&mut ui, MouseEventType::Up, x, y, MouseButton::Left);
+    let cancelled_mouse = log.take();
+    assert!(cancelled_mouse.is_empty());
+    pointer(&mut ui, 3, PointerEventKind::Down, x, y);
+    pointer(&mut ui, 3, PointerEventKind::Up, x, y);
+    let cancelled_touch = log.take();
+    assert!(cancelled_touch.is_empty());
+    report(
+        "pointer.click-after-up",
+        format!(
+            "a tap clicks ({tap:?}); after a cancelled mouseup {cancelled_mouse:?}, after a cancelled pointerup {cancelled_touch:?} (divui/src/document.rs:1108)"
+        ),
+    );
+}

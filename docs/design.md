@@ -54,7 +54,7 @@ says who needs each feature.
 
 | # | Platform feature | Div today | Missing | Owner | Size | Packages |
 | --- | --- | --- | --- | --- | --- | --- |
-| F1 | **Pointer Events** (Level 3) and the UI Events mouse model | partial. `set_pointer_capture` routes moves to the captor, including outside the window (`pointer.capture`, native). Touch fires `pointer*`. `hit_test` skips `pointer-events: none` (`pointer.ghost-hit-test`) | Mouse fires only `mouse*` and touch only `pointer*`, where Chromium sends `pointer*` and then compatibility `mouse*`. Capture is never released after up, and there are no `gotpointercapture`/`lostpointercapture` events (`pointer.capture-release`, native). Right and middle buttons fire `click`, and there is no `auxclick` (`pointer.right-button`). `click` targets the release element, not the common ancestor (`pointer.click-common-ancestor`). No `dblclick` or `detail` (`pointer.dblclick`). No `pointerType`, `buttons`, `isPrimary`, pressure, tilt or screen coordinates. Native moves report button 2 (native log; `divui/src/app.rs:289-293`). No `contextmenu` (framework gap 3). | framework (divui events, div-platform) + engine (`interaction.rs` capture, click target) | M | all |
+| F1 | **Pointer Events** (Level 3) and the UI Events mouse model | partial. `set_pointer_capture` routes moves to the captor, including outside the window (`pointer.capture`, native). Touch fires `pointer*`. `hit_test` skips `pointer-events: none` (`pointer.ghost-hit-test`) | Mouse fires only `mouse*` and touch only `pointer*`, where Chromium sends `pointer*` and then compatibility `mouse*`. Capture is never released after up, and there are no `gotpointercapture`/`lostpointercapture` events (`pointer.capture-release`, native). Right and middle buttons fire `click`, and there is no `auxclick` (`pointer.right-button`). `click` targets the release element, not the common ancestor (`pointer.click-common-ancestor`). No `dblclick` or `detail` (`pointer.dblclick`). No `pointerType`, `buttons`, `isPrimary`, pressure, tilt or screen coordinates. Native moves report button 2 (native log; `divui/src/app.rs:289-293`). A cancelled `mouseup` or `pointerup` suppresses `click` (`pointer.click-after-up`; `divui/src/document.rs:1108`); Chromium still fires it. No `hasPointerCapture` or `movementX`/`movementY`. No `contextmenu` (framework gap 3). | framework (divui events, div-platform) + engine (`interaction.rs` capture, click target) | M | all |
 | F2 | **Wheel events** (UI Events `WheelEvent`) | partial. Cancellable `wheel` events; Ctrl+wheel `preventDefault` works (`input.ctrl-wheel`) | **Native direction is inverted**: one notch forward scrolled 500 → 540 → 580, and horizontal is inverted too (native log; `div-platform/src/desktop.rs:1027-1040`). 40 px per notch, ignoring the system's lines per notch. No `deltaMode`. Shift+wheel does not scroll horizontally (`input.shift-wheel`) | framework (div-platform) | S | all scrolling |
 | F3 | **HTML drag and drop** and **`DataTransfer`**, including OS files in and out | missing. No `draggable` or drag events (*source*). OS drops reach `App` and are discarded (`divui/src/app.rs:374-379`); only a single-window `App` can observe them, through `on_platform_event`, with no position | The whole API: the drag event sequence, `DataTransfer` (one type shared with the clipboard, files as `File` objects wrapping paths: decision 7), the drag image, drop effects, and OS bridges (Windows OLE `IDropTarget`/`DoDragDrop`, X11 XDND, Wayland data device) | engine (events, defaults, drag image) + framework (div-platform per OS) | L | react-dnd, react-arborist, AG Grid |
 | F4 | **Top layer**, **`<dialog>`** (`show`, `showModal`, `::backdrop`, Escape) | partial. `Document::set_modal_root` contains Tab and restores focus (`focus.trap`). Portals by hand: a fixed box at the end of `<body>` escapes clipping and stacks by `z-index` (`overlay.portal`, `overlay.z-order`) | No `<dialog>` element (`div-dom` `ElementTag`), no top layer, no `::backdrop` | engine (A3, planned) | L (A3) | Radix, cmdk |
@@ -73,6 +73,7 @@ says who needs each feature.
 | F17 | **CSS `cursor`** keywords | partial: 6 values (`div-style/src/property.rs:296`, `div-platform/src/lib.rs:319-326`); the cursor comes from the hit element, not the captor (`app.rs:471-488`) | `col-resize`, `row-resize`, `ew/ns/nesw/nwse-resize`, `grab`, `grabbing`, `crosshair`, `copy`, `alias`, `no-drop`, and the rest of the keyword set | engine (style) + framework (platform) | S | panels, dnd-kit, AG Grid |
 | F18 | **Frame callback** (`requestAnimationFrame`) and timers | partial. `div::task::sleep` and `interval` exist (*source*) | A per-frame callback before style and layout | framework | S | Floating UI, dnd-kit, AG Grid |
 | F19 | **`app-region: drag`** and window geometry (`screenX/Y`, `moveTo`, `resizeTo`, maximize state, `resize`/`move` events) | partial. `WindowSpec` has title, size, min, max, resizable and decorations (`divui/src/window.rs:97-160`) | Drag regions, window position and state, move and resize events, the pointer's screen position, and platform events for `AppSpec` windows. winit 0.30 has `drag_window`, `drag_resize_window` and `outer_position` | framework (window, div-platform) | M–L | custom chrome, tear-off, state restore |
+| F20 | **Media queries from script** (`matchMedia`, the `pointer` and `hover` media features) | missing (*source*) | `matchMedia` with change events, and `(pointer: coarse)`/`(hover: none)` from the input devices present | framework + engine | S | react-resizable-panels (coarse hit targets), Radix |
 
 Already queued in Div, and needed by the same packages: CSS custom
 properties, attribute selectors and `data-state` styling (Tier 0 items 0.1
@@ -172,7 +173,7 @@ after a Div bump means a finding changed.
 
 | Kind | Where | Notes |
 | --- | --- | --- |
-| Headless | `tests/probe_*.rs` (33 tests) | `cargo test -- --nocapture --test-threads=1` reproduces every probe id quoted here |
+| Headless | `tests/probe_*.rs` (34 tests) | `cargo test -- --nocapture --test-threads=1` reproduces every probe id quoted here |
 | Native, Windows | `src/bin/native_probe.rs` and `tools/native-input.ps1`; output in [evidence/native-input-windows.log](evidence/native-input-windows.log) | A real Win32 window. The script **posts** mouse messages, so the real cursor never moves. Posted messages take the same window procedure as device input but are not device input: no OS capture, no pen or touch. The `Leave` after each posted move is Windows reporting the real cursor outside the window |
 | Source | `path:line` at `565db46a` | Pen, touch, file drop and window APIs, where a probe can't reach |
 
@@ -246,6 +247,35 @@ One PR per milestone, merged when CI is green:
 | M6 | Tree with keyboard navigation, multi-select and in-app drag reorder | react-arborist | as M4 and M5 | F13 `role="tree"`; F3 drag and drop |
 | M7 | Command palette on div-components' dialog | cmdk | modal root, focus trap, keyboard | F4 `<dialog>`; F13 `role="listbox"` |
 | M8 | Workbench app combining the ports in one window | — | `App`, menus | F19 window chrome; F3 OS file drop |
+
+### M1 status: react-resizable-panels
+
+`src/panels` ports react-resizable-panels 4.22.1 (commit `71c72536`):
+`Group`, `Panel` and `Separator` with sizes in px, %, rem, em, vh and vw;
+min, max and collapsible panels with thresholds; nested groups; the
+document-level pointer handling with hit regions, focus, click
+suppression and pointer capture; separator keys (arrows, Home, End,
+Enter, F6); the separator's ARIA values and `data-*` state; and the
+package's cursor choice. Not yet ported: the imperative APIs,
+double-click reset, resize previews, `groupResizeBehavior`, persisted and
+default layouts, and `Grid`.
+
+Verification, on Windows with Div `92ea25a0`:
+
+- `cargo test --test panels_oracle`: the port's layout and cursor
+  functions against the package's own, run in Node 22.18 over seeded
+  inputs (`tools/rrp-oracle/generate.mjs`). All 10,684 cases are
+  bit-for-bit equal: `formatLayoutNumber` 1,000, `validateItemSize`
+  1,000, `adjustLayoutByDelta` 6,000 (2,000 inputs × 3 triggers),
+  `validateAxisLayout` 1,000, `calculateDefaultLayout` 300,
+  `calculateSeparatorAriaValues` 1,000 and `getCursorStyle` 384.
+- `cargo test --test panels_group`: 10 tests of the DOM and interactions
+  on Div, driven by `Document` dispatch. Panel widths follow the layout
+  exactly (198, 396 and 198 px for 25/50/25 of 792 px).
+
+This is not yet a comparison with the package running in Chromium; that
+is M2. The port surfaced one new Div gap: Div drops the `click` after a
+cancelled `mouseup` or `pointerup` (F1).
 
 M2 to M7 each add the package's reference page and trace steps to the
 fidelity runner, and report measured differences per step. A milestone
