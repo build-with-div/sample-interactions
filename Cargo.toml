@@ -21,8 +21,10 @@ div-components = { git = "https://github.com/build-with-div/div", rev = "92ea25a
 
 [dev-dependencies]
 divui = { git = "https://github.com/build-with-div/div", rev = "92ea25a0756dd3e22aa57266ae5ead49a1ff9d8f", features = ["testing"] }
-# Reads the react-resizable-panels oracle (tests/fixtures/rrp-oracle.json).
-serde_json = "1.0.149"
+# Reads the react-resizable-panels oracle and the Chromium captures in
+# tests/fixtures. `float_roundtrip` parses every number to the f64 that
+# JavaScript wrote, so the comparisons can be bitwise.
+serde_json = { version = "1.0.149", features = ["float_roundtrip"] }
 
 # The framework's dependency patches, which Cargo does not apply to
 # dependents. Keep them equal to the pinned Div workspace's.

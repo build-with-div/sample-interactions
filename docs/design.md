@@ -74,6 +74,7 @@ says who needs each feature.
 | F18 | **Frame callback** (`requestAnimationFrame`) and timers | partial. `div::task::sleep` and `interval` exist (*source*) | A per-frame callback before style and layout | framework | S | Floating UI, dnd-kit, AG Grid |
 | F19 | **`app-region: drag`** and window geometry (`screenX/Y`, `moveTo`, `resizeTo`, maximize state, `resize`/`move` events) | partial. `WindowSpec` has title, size, min, max, resizable and decorations (`divui/src/window.rs:97-160`) | Drag regions, window position and state, move and resize events, the pointer's screen position, and platform events for `AppSpec` windows. winit 0.30 has `drag_window`, `drag_resize_window` and `outer_position` | framework (window, div-platform) | M–L | custom chrome, tear-off, state restore |
 | F20 | **Media queries from script** (`matchMedia`, the `pointer` and `hover` media features) | missing (*source*) | `matchMedia` with change events, and `(pointer: coarse)`/`(hover: none)` from the input devices present | framework + engine | S | react-resizable-panels (coarse hit targets), Radix |
+| F21 | **Flex layout with fractional `flex-grow`**, sized in LayoutUnits as Chromium sizes it | partial. Boxes are multiples of 1/64 px, as in Chromium | With fractional grow factors, items and the boxes after them land one LayoutUnit (1/64 px) from Chromium's. For `flex: <grow> 1 0px` items between 4px separators, 21 of 24 boxes differ across 6 cases (`layout.flex-grow-fractions`); grow 69.697 and 30.303 over 396 px gives 276 and 120 px in Chromium, 276.015625 and 119.984375 px in Div | engine (flex layout) | S (estimate) | exact geometry for every percent split: panels, table columns |
 
 Already queued in Div, and needed by the same packages: CSS custom
 properties, attribute selectors and `data-state` styling (Tier 0 items 0.1
@@ -173,7 +174,7 @@ after a Div bump means a finding changed.
 
 | Kind | Where | Notes |
 | --- | --- | --- |
-| Headless | `tests/probe_*.rs` (34 tests) | `cargo test -- --nocapture --test-threads=1` reproduces every probe id quoted here |
+| Headless | `tests/probe_*.rs` (35 tests) | `cargo test -- --nocapture --test-threads=1` reproduces every probe id quoted here |
 | Native, Windows | `src/bin/native_probe.rs` and `tools/native-input.ps1`; output in [evidence/native-input-windows.log](evidence/native-input-windows.log) | A real Win32 window. The script **posts** mouse messages, so the real cursor never moves. Posted messages take the same window procedure as device input but are not device input: no OS capture, no pen or touch. The `Leave` after each posted move is Windows reporting the real cursor outside the window |
 | Source | `path:line` at `565db46a` | Pen, touch, file drop and window APIs, where a probe can't reach |
 
@@ -209,7 +210,8 @@ says so. It does not grow an observer of its own.
 5. **F4 top layer and `<dialog>` (A3, planned), then F5 `popover`, F7
    `inert` and F6 anchor positioning.** Together these replace Floating
    UI's JavaScript with the platform's own placement.
-6. **F11 and F12 scroll and focus details, F15, F16, F18 (S each).**
+6. **F11 and F12 scroll and focus details, F15, F16, F18, F21 flex
+   rounding (S each).**
 7. **F3 HTML drag and drop:** in-app first (M), then OS files in (M), then
    drag-out (L) per OS. **F9 `IntersectionObserver` (M).**
 8. **F19 window chrome (M–L).**
@@ -273,14 +275,66 @@ Verification, on Windows with Div `92ea25a0`:
   on Div, driven by `Document` dispatch. Panel widths follow the layout
   exactly (198, 396 and 198 px for 25/50/25 of 792 px).
 
-This is not yet a comparison with the package running in Chromium; that
-is M2. The port surfaced one new Div gap: Div drops the `click` after a
-cancelled `mouseup` or `pointerup` (F1).
+The port surfaced one new Div gap: Div drops the `click` after a
+cancelled `mouseup` or `pointerup` (F1). M2 then compared it with the
+package running in Chromium and fixed two port errors (below).
 
-M2 to M7 each add the package's reference page and trace steps to the
-fidelity runner, and report measured differences per step. A milestone
-whose platform feature lands in Div first is built on the feature instead
-of scaffolding.
+### M2 status: the fidelity runner
+
+The runner replays scripted steps against the package itself in pinned
+Chromium and against the port on Div, and compares what each shows after
+every step.
+
+- `tests/fixtures/fidelity/panels-scenarios.json`: 6 scenarios, 63 steps
+  in all. They cover mouse drags (past a minimum, collapse, back to the
+  start, a press without a drag), separator keys with F6 cycling,
+  collapse and restore with Enter, a vertical group with px constraints,
+  nested groups and a disabled separator. Coordinates are absolute, so
+  both engines receive the same input.
+- `reference/`: the reference page. React 19.3.1 renders the scenario
+  with react-resizable-panels 4.22.1 from npm, built by esbuild 0.28.2
+  into `out/reference/panels.html`.
+- `tools/fidelity/capture.mjs`: drives that page in Chrome for Testing
+  147.0.7727.50 (the build Div's census pins) over the DevTools protocol.
+  Mouse and keys go in as trusted input; the window is emulated as
+  focused; the page settles for two frames and a task after each step.
+  It writes `panels-chromium.json`. Two captures are byte-identical.
+- `tests/fidelity_panels.rs`: replays the steps on Div through `Document`
+  dispatch and compares, after mount and after every step, each element's
+  box (`getBoundingClientRect`, bitwise), its attributes, the focused
+  element, the cursor, `onLayoutChange` and `onLayoutChanged` per group,
+  and the click targets. The differences must be exactly those in
+  `panels-div-differences.txt`, value for value, each under its gap.
+
+Measured on Windows, Div `92ea25a0`, over 69 snapshots:
+
+| Compared | Equal to Chromium |
+| --- | --- |
+| Elements (which, in what order) | 69/69 |
+| Attributes | 380/380 |
+| Focused element | 69/69 |
+| Cursor | 69/69 |
+| `onLayoutChange` | 69/69 |
+| `onLayoutChanged` | 69/69 |
+| Click targets | 68/69 |
+| Boxes | 281/380 |
+
+All 99 box differences are one LayoutUnit (1/64 px) and come from Div's
+flex layout, not the port. `tests/probe_layout.rs` shows the same
+rounding on plain flex items with no port involved (F21). The click
+difference is the known F1 click target (`pointer.click-common-ancestor`):
+a press on the disabled separator released over a panel clicks the group
+in Chromium and the release element in Div.
+
+The comparison found two port errors, both fixed here. The port did not
+set `data-testid`, which the package sets from `id`. And a drag that
+returned to its starting point did not release focus, because the port
+reset `didPointerMove` on each move where the package keeps it once set.
+
+M3 to M7 each add the package's reference page and steps to the runner,
+and report measured differences per step. A milestone whose platform
+feature lands in Div first is built on the feature instead of
+scaffolding.
 
 ## Reproduce
 

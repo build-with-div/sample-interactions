@@ -33,6 +33,19 @@ the feature, or *unscheduled*.
 | F19 window `blur`, `pagehide` | End an active drag | Not handled | framework | M | Tier 3 (I7) |
 | F20 `matchMedia("(pointer: coarse)")` | 20px hit targets on coarse pointers, 10px on fine | Always 10px | framework + engine | S | Tier 1 (1.2) |
 
+## Measured by the fidelity runner
+
+Differences between the port on Div and the package in pinned Chromium
+that need no scaffolding, because the port does what the package does and
+Div gives a different result. `tests/fidelity_panels.rs` holds them to
+[panels-div-differences.txt](../tests/fixtures/fidelity/panels-div-differences.txt),
+value for value.
+
+| Feature | Difference | Count | Probe without the port | Owner | Size | Div plan |
+| --- | --- | --- | --- | --- | --- | --- |
+| F21 flex layout with fractional `flex-grow` | Panel and separator boxes land one LayoutUnit (1/64 px) from Chromium's | 99 of 380 boxes | `layout.flex-grow-fractions` (`tests/probe_layout.rs`) | engine | S (estimate) | unscheduled |
+| F1 click target | A press on one element released over another: Chromium clicks their nearest common ancestor, Div the release element | 1 of 69 snapshots | `pointer.click-common-ancestor` | framework + engine | S | Tier 1 (1.1, I2) |
+
 ## In the probes
 
 | Label | Where | Web feature | Owner | Size | Div plan |
