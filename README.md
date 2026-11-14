@@ -21,6 +21,9 @@ compared with the original package in pinned Chromium.
 - `src/panels`: react-resizable-panels 4.22.1 on Div (`Group`, `Panel`,
   `Separator`). `tests/panels_oracle.rs` checks its layout functions
   against the package's own, and `tests/panels_group.rs` drives it on Div.
+- `src/table`: `@tanstack/table-core` 9.3.1's model (columns, rows,
+  header groups, sorting, column sizing and resizing) in Rust.
+  `tests/table_oracle.rs` checks every result against the package.
 - The fidelity runner: `tests/fidelity_panels.rs` replays scripted
   scenarios on Div and compares each step with the package itself in
   pinned Chromium (`reference/` builds the page, `tools/fidelity/` drives
@@ -59,6 +62,13 @@ To regenerate the react-resizable-panels oracle (Node 22.18 or newer):
 ```sh
 git clone --depth 1 --branch 4.22.1 https://github.com/bvaughn/react-resizable-panels out/rrp-4.22.1
 node tools/rrp-oracle/generate.mjs out/rrp-4.22.1 tests/fixtures/rrp-oracle.json
+```
+
+To regenerate the TanStack Table oracle from the published package:
+
+```sh
+cd reference && npm ci && cd ..
+node tools/table-oracle/generate.mjs tests/fixtures/table-oracle.json
 ```
 
 To recapture Chromium for the fidelity runner, with `CHROME` the `chrome`

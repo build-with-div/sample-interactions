@@ -7,6 +7,7 @@
     "build": "node build.mjs"
   },
   "dependencies": {
+    "@tanstack/table-core": "9.3.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-resizable-panels": "4.22.1"
