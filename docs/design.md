@@ -243,7 +243,8 @@ One PR per milestone, merged when CI is green:
 | M0 | Pin Div `92ea25a0`; this plan | — | — | — |
 | M1 | Panel group layout model and its view: sizes in percent, min, max, collapsible, nested groups, keyboard resizing on the separator | react-resizable-panels | pointer capture, flex sizing, keyboard events, `aria-value*` attributes | F1 capture release and document-level up; F8 group size; F13 `role="separator"`; F15 `user-select`; F17 `col-resize` cursor |
 | M2 | Fidelity runner and the first reference page: the same scripted drag and key steps in pinned Chromium (CDP) and in Div, comparing slot geometry and attributes after each step | react-resizable-panels | `Document` dispatch, `bounding_rect` | T2 step kinds live here until Div's harness has them |
-| M3 | Table model: column definitions, sorting, column sizing (`onChange` and `onEnd` modes), the row model, rendered as a grid | TanStack Table (`table-core`) | sticky header (F14), pointer capture | F13 `role="grid"`; F17 cursor; F1 |
+| M3a | Table model: column definitions, the row model, header groups, sorting, column sizing and resizing (`onChange` and `onEnd`), checked against the package | TanStack Table (`table-core`) | — (logic only) | — |
+| M3b | The model rendered as a grid, with header clicks and resize drags, in the fidelity runner | TanStack Table | sticky header (F14), document mouse events | F13 `role="grid"`; F17 cursor; F18 frame callback; touch events (to probe) |
 | M4 | Virtualizer: measurement, overscan, `scrollToIndex`, combined with M3 | TanStack Virtual (`virtual-core`) | scroll APIs, frame-timed scroll events | F8 row measurement; F11 `scrollend` |
 | M5 | Drag sensors, collision detection, sortable lists and kanban, auto-scroll | dnd-kit core and sortable | pointer capture, `hit_test`, geometry, timers | F1 unified stream; F15; F16 `touch-action`; F18 |
 | M6 | Tree with keyboard navigation, multi-select and in-app drag reorder | react-arborist | as M4 and M5 | F13 `role="tree"`; F3 drag and drop |
@@ -335,6 +336,53 @@ M3 to M7 each add the package's reference page and steps to the runner,
 and report measured differences per step. A milestone whose platform
 feature lands in Div first is built on the feature instead of
 scaffolding.
+
+### M3a status: the TanStack Table model
+
+`src/table` ports `@tanstack/table-core` 9.3.1 with the features a sorted,
+resizable grid uses: column definitions (accessor keys and functions,
+dotted keys, groups, `defaultColumn`), the core and sorted row models with
+sub-rows, header groups with placeholders and spans, row sorting (single
+and multi-sort, removal, `sortUndefined`, `invertSorting`, the six
+built-in sort functions, automatic sort function and direction), column
+sizing (sizes, starts, afters, total) and column resizing (`onEnd` and
+`onChange`, `ltr` and `rtl`, mouse and touch, and the frame coalescing
+the package does with `requestAnimationFrame`).
+
+table-core is plain JavaScript, so exactness depends on JavaScript
+semantics, which the port keeps:
+
+- `===`, `<` and `>` across types, `Number()` on strings and UTF-16 string
+  order (`src/table/value.rs`), because the built-in sort functions
+  compare raw cell values.
+- V8's `Array.prototype.sort` (`src/table/array_sort.rs`, a port of
+  TimSort from V8's `array-sort.tq`). The package's comparators are
+  inconsistent when a column holds `NaN` or mixed types, and ECMAScript
+  then leaves the order to the engine. Swapping in Rust's `sort_by` makes
+  the oracle test panic ("does not correctly implement a total order").
+  Changing V8's initial gallop threshold from 7 to 8 changes one
+  700-row snapshot.
+- Object key order for column sizing state (`src/table/object_map.rs`)
+  and `Math.round`, `Math.max` and `Math.min` with their `NaN` and `-0`
+  rules.
+
+Verification, on Windows with Div `92ea25a0`:
+`cargo test --test table_oracle` replays 167 cases (3 written by hand
+after the package's sorting and column-resizing examples, 160 seeded, and
+4 seeded cases of 70 to 1,500 rows) through the published package in
+Node 22.18 (`tools/table-oracle/generate.mjs`) and through the port. All
+2,227 snapshots are equal, field by field and bit for bit: sorting state,
+top-level and flat row order, 15 values per column, header groups, total
+size, column sizing and column resizing state.
+
+The oracle runs without `requestAnimationFrame`, so it checks the
+immediate path; a unit test covers the coalescing, and M3b checks it
+against Chromium. M3a renders nothing and uses no Div API, so it has no
+`div-gap` scaffolding. M3b needs what the package's resize handler uses:
+`mousemove` and `mouseup` listeners on the document, `touchstart`,
+`touchmove`, `touchend` and `touchcancel` with `touches` (not yet probed
+on Div), listeners registered with `{ passive: false }`, and a frame
+callback (F18).
 
 ## Reproduce
 

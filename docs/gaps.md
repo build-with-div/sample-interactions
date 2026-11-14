@@ -33,6 +33,9 @@ the feature, or *unscheduled*.
 | F19 window `blur`, `pagehide` | End an active drag | Not handled | framework | M | Tier 3 (I7) |
 | F20 `matchMedia("(pointer: coarse)")` | 20px hit targets on coarse pointers, 10px on fine | Always 10px | framework + engine | S | Tier 1 (1.2) |
 
+`src/table` (TanStack Table): no labels. The model is logic only and
+uses no Div API; its rendering (M3b) will add the grid's gaps here.
+
 ## Measured by the fidelity runner
 
 Differences between the port on Div and the package in pinned Chromium
